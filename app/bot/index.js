@@ -18,13 +18,6 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-async function recordNewMessage(channel, message) {
-  const history = (await getConversationHistory(channel)) || [];
-  const newPrompt = { role: "user", content: message };
-  const updatedHistory = [...history, newPrompt];
-  await updateConversationHistory(channel, updatedHistory);
-}
-
 async function chatGPTReply(channel, message, record = false) {
   const history = (await getConversationHistory(channel)) || [];
   const prompt = { role: "user", content: message };
@@ -62,8 +55,8 @@ async function handleNewMessage({ channel, userMessage, botUserId, subtype }) {
     return;
   }
   const isActive = await getConversationState(channel);
-  if (userMessage.includes(`<@${botUserId}>`)) {
-    // Remove all occurrences of the bot's mention from the message
+
+  if (userMessage.includes(`<@${botUserId}>`) || isActive) {
     const mentionRegex = new RegExp(`<@${botUserId}>`, "g");
     const messageWithoutMention = userMessage.replace(mentionRegex, "").trim();
 
@@ -82,9 +75,6 @@ async function handleNewMessage({ channel, userMessage, botUserId, subtype }) {
         text: reply,
       });
     }
-  } else if (isActive) {
-    console.log("only record new message");
-    await recordNewMessage(channel, userMessage);
   }
 }
 

@@ -23,14 +23,18 @@ async function getConversationHistory(channel) {
 async function updateConversationHistory(channel, history) {
   const params = {
     TableName: dynamoTable,
-    Item: {
+    Key: {
       channel_id: channel,
-      conversation_history: history,
     },
+    UpdateExpression: "set conversation_history = :history",
+    ExpressionAttributeValues: {
+      ":history": history,
+    },
+    ReturnValues: "UPDATED_NEW",
   };
 
   try {
-    await dynamoDB.put(params).promise();
+    await dynamoDB.update(params).promise();
   } catch (error) {
     console.error("Error updating conversation history:", error);
   }
