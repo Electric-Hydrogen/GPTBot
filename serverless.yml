@@ -9,9 +9,36 @@ provider:
     SLACK_BOT_TOKEN: ${env:SLACK_BOT_TOKEN}
     SLACK_SIGNING_SECRET: ${env:SLACK_SIGNING_SECRET}
     OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
 
 functions:
   app:
     handler: dist/tmp/index.handler
     events:
       - httpApi: 'POST /slack/events'
+
+resources:
+  Resources:
+    conversationsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+        AttributeDefinitions:
+          - AttributeName: channel_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: channel_id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST

@@ -1,5 +1,11 @@
 const { App, AwsLambdaReceiver } = require("@slack/bolt");
 const { Configuration, OpenAIApi } = require("openai");
+const {
+  getConversationHistory,
+  updateConversationHistory,
+  getConversationState,
+  updateConversationState,
+} = require("./dynamo");
 
 const awsLambdaReceiver = new AwsLambdaReceiver({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
@@ -17,18 +23,15 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-const activeChannels = new Set();
-const conversationHistory = new Map();
-
-function recordNewMessage(channel, message) {
-  const history = conversationHistory.get(channel) || [];
+async function recordNewMessage(channel, message) {
+  const history = (await getConversationHistory(channel)) || [];
   const newPrompt = { role: "user", content: message };
   const updatedHistory = [...history, newPrompt];
-  conversationHistory.set(channel, updatedHistory);
+  await updateConversationHistory(channel, updatedHistory);
 }
 
 async function chatGPTReply(channel, message, record = false) {
-  const history = conversationHistory.get(channel) || [];
+  const history = (await getConversationHistory(channel)) || [];
   const prompt = { role: "user", content: message };
 
   const completion = await openai.createChatCompletion({
@@ -52,7 +55,7 @@ async function chatGPTReply(channel, message, record = false) {
     ];
     console.log("Update history", updatedHistory);
     console.log("Update history channel", channel);
-    conversationHistory.set(channel, updatedHistory);
+    await updateConversationHistory(channel, updatedHistory);
   }
 
   return reply;
@@ -64,15 +67,14 @@ app.command("/gptbot", async ({ command, ack, respond }) => {
 
   if (subcommand === "start") {
     console.log("added channel", channel);
-    activeChannels.add(channel);
-    console.log("activeChannels", [...activeChannels]);
+    await updateConversationState(channel, true);
     await ack();
     await respond(
       "You have started a conversation with the ChatGPT bot in this channel."
     );
   } else if (subcommand === "stop") {
-    activeChannels.delete(channel);
-    conversationHistory.delete(channel);
+    await updateConversationState(channel, false);
+    await updateConversationHistory(channel, null);
     await ack();
     await respond(
       "You have stopped the conversation with the ChatGPT bot in this channel."
@@ -88,6 +90,7 @@ app.message(async ({ message, say, context }) => {
   const { botUserId } = context;
   console.log(message);
   console.log(context);
+  const isActive = await getConversationState(channel);
   if (userMessage.includes(`<@${botUserId}>`)) {
     // Remove all occurrences of the bot's mention from the message
     const mentionRegex = new RegExp(`<@${botUserId}>`, "g");
@@ -95,17 +98,19 @@ app.message(async ({ message, say, context }) => {
 
     // Only process the message and respond if there's remaining text
     if (messageWithoutMention.length > 0) {
-      const record = activeChannels.has(channel);
       console.log("Incoming channel", channel);
-      console.log("activeChannels", [...activeChannels]);
       console.log("about to send to chat GPT message", messageWithoutMention);
-      console.log("about to send to chat GPT record", record);
-      const reply = await chatGPTReply(channel, messageWithoutMention, record);
+      console.log("about to send to chat GPT record", isActive);
+      const reply = await chatGPTReply(
+        channel,
+        messageWithoutMention,
+        isActive
+      );
       await say(reply);
     }
-  } else if (activeChannels.has(channel)) {
+  } else if (isActive) {
     console.log("only record new message");
-    recordNewMessage(channel, message);
+    await recordNewMessage(channel, message);
   }
 });
 
