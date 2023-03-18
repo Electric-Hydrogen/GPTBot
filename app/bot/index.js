@@ -1,22 +1,17 @@
-const { App, AwsLambdaReceiver } = require("@slack/bolt");
+const { App } = require("@slack/bolt");
 const { Configuration, OpenAIApi } = require("openai");
 const {
   getConversationHistory,
   updateConversationHistory,
   getConversationState,
-  updateConversationState,
-} = require("./dynamo");
+} = require("../common/dynamo");
 
-const awsLambdaReceiver = new AwsLambdaReceiver({
-  signingSecret: process.env.SLACK_SIGNING_SECRET,
-});
+const { SLACK_SIGNING_SECRET, SLACK_BOT_TOKEN, OPENAI_API_KEY } = process.env;
 
 const app = new App({
-  token: process.env.SLACK_BOT_TOKEN,
-  receiver: awsLambdaReceiver,
+  token: SLACK_BOT_TOKEN,
+  signingSecret: SLACK_SIGNING_SECRET,
 });
-
-const { OPENAI_API_KEY } = process.env;
 
 const configuration = new Configuration({
   apiKey: OPENAI_API_KEY,
@@ -61,35 +56,11 @@ async function chatGPTReply(channel, message, record = false) {
   return reply;
 }
 
-app.command("/gptbot", async ({ command, ack, respond }) => {
-  const channel = command.channel_id;
-  const subcommand = command.text;
-
-  if (subcommand === "start") {
-    console.log("added channel", channel);
-    await updateConversationState(channel, true);
-    await ack();
-    await respond(
-      "You have started a conversation with the ChatGPT bot in this channel."
-    );
-  } else if (subcommand === "stop") {
-    await updateConversationState(channel, false);
-    await updateConversationHistory(channel, null);
-    await ack();
-    await respond(
-      "You have stopped the conversation with the ChatGPT bot in this channel."
-    );
-  } else {
-    await ack(`Invalid subcommand. Use "/GPTBot start" or "/GPTBot stop".`);
+async function handleNewMessage({ channel, userMessage, botUserId, subtype }) {
+  console.log("handle new message");
+  if (subtype === "message_deleted") {
+    return;
   }
-});
-
-app.message(async ({ message, say, context }) => {
-  const { channel } = message;
-  const userMessage = message.text;
-  const { botUserId } = context;
-  console.log(message);
-  console.log(context);
   const isActive = await getConversationState(channel);
   if (userMessage.includes(`<@${botUserId}>`)) {
     // Remove all occurrences of the bot's mention from the message
@@ -106,15 +77,25 @@ app.message(async ({ message, say, context }) => {
         messageWithoutMention,
         isActive
       );
-      await say(reply);
+      await app.client.chat.postMessage({
+        channel,
+        text: reply,
+      });
     }
   } else if (isActive) {
     console.log("only record new message");
-    await recordNewMessage(channel, message);
+    await recordNewMessage(channel, userMessage);
   }
-});
+}
 
-module.exports.handler = async (event, context, callback) => {
-  const handler = await awsLambdaReceiver.start();
-  return handler(event, context, callback);
+module.exports.handler = async (event) => {
+  console.log("Event received:", JSON.stringify(event));
+  await handleNewMessage(event);
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      message: "Event processed successfully",
+    }),
+  };
 };

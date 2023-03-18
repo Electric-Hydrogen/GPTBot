@@ -6,10 +6,10 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: us-east-1
   environment:
+    BOT_FUNCTION_NAME: ${self:service}-${self:provider.stage}-botFunction
+    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
     SLACK_BOT_TOKEN: ${env:SLACK_BOT_TOKEN}
     SLACK_SIGNING_SECRET: ${env:SLACK_SIGNING_SECRET}
-    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
-    DYNAMODB_TABLE: ${self:service}-${opt:stage, self:provider.stage}
   iam:
     role:
       statements:
@@ -22,13 +22,22 @@ provider:
             - dynamodb:UpdateItem
             - dynamodb:DeleteItem
           Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}"
+        - Effect: Allow
+          Action:
+            - lambda:InvokeFunction
+            - lambda:InvokeAsync
+          Resource: "arn:aws:lambda:${opt:region, self:provider.region}:*:function:${self:provider.environment.BOT_FUNCTION_NAME}"
 
 functions:
-  app:
-    handler: dist/tmp/index.handler
+  acknowledgerFunction:
+    handler: dist/acknowledger.handler
+    provisionedConcurrency: 2
     events:
       - httpApi: 'POST /slack/events'
-
+  botFunction:
+    handler: dist/bot.handler
+    environment:
+      OPENAI_API_KEY: ${env:OPENAI_API_KEY}
 resources:
   Resources:
     conversationsTable:
