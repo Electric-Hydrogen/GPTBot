@@ -26,7 +26,7 @@ async function chatGPTReply(channel, message, record = false) {
   const model = record
     ? (await getConversationEngine(channel)) || DEFAULT_ENGINE
     : DEFAULT_ENGINE;
-  console.log("Model Used: ", model);
+
   const completion = await openai.createChatCompletion({
     model,
     messages: [
@@ -35,10 +35,8 @@ async function chatGPTReply(channel, message, record = false) {
       prompt,
     ],
   });
-  console.log("Sending", [...history, prompt]);
 
   const reply = completion.data.choices[0].message.content.trim();
-  console.log("reply", reply);
 
   if (record) {
     const updatedHistory = [
@@ -46,8 +44,6 @@ async function chatGPTReply(channel, message, record = false) {
       prompt,
       { role: "assistant", content: reply },
     ];
-    console.log("Update history", updatedHistory);
-    console.log("Update history channel", channel);
     await updateConversationHistory(channel, updatedHistory);
   }
 
@@ -55,7 +51,8 @@ async function chatGPTReply(channel, message, record = false) {
 }
 
 async function handleNewMessage({ channel, userMessage, botUserId, subtype }) {
-  console.log("handle new message");
+  console.log("Handle new message");
+
   if (subtype === "message_deleted") {
     return;
   }
@@ -67,9 +64,6 @@ async function handleNewMessage({ channel, userMessage, botUserId, subtype }) {
 
     // Only process the message and respond if there's remaining text
     if (messageWithoutMention.length > 0) {
-      console.log("Incoming channel", channel);
-      console.log("about to send to chat GPT message", messageWithoutMention);
-      console.log("about to send to chat GPT record", isActive);
       const reply = await chatGPTReply(
         channel,
         messageWithoutMention,
@@ -84,7 +78,6 @@ async function handleNewMessage({ channel, userMessage, botUserId, subtype }) {
 }
 
 module.exports.handler = async (event) => {
-  console.log("Event received:", JSON.stringify(event));
   await handleNewMessage(event);
 
   return {

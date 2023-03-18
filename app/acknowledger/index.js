@@ -30,7 +30,6 @@ app.command("/gptbot", async ({ command, ack, respond }) => {
   const engine = args[1];
 
   if (action === "start") {
-    console.log("added channel", channel);
     const selectedEngine = validEngines.includes(engine)
       ? engine
       : "gpt-3.5-turbo";
@@ -38,13 +37,13 @@ app.command("/gptbot", async ({ command, ack, respond }) => {
     await updateConversationHistory(channel, null);
     await updateConversationEngine(channel, selectedEngine);
     await respond(
-      `You have started a conversation with the ChatGPT bot in this channel using the engine '${selectedEngine}'.`
+      `You have started a conversation with GPTBot in this channel using the engine '${selectedEngine}'.`
     );
   } else if (action === "stop") {
     await updateConversationState(channel, false);
     await updateConversationHistory(channel, null);
     await respond(
-      "You have stopped the conversation with the ChatGPT bot in this channel."
+      "You have stopped the conversation with GPTBot in this channel."
     );
   } else {
     await respond(
