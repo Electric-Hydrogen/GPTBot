@@ -1,0 +1,17 @@
+service: slack-chatgpt-lambda
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  stage: ${opt:stage, 'dev'}
+  region: us-east-1
+  environment:
+    SLACK_BOT_TOKEN: ${env:SLACK_BOT_TOKEN}
+    SLACK_SIGNING_SECRET: ${env:SLACK_SIGNING_SECRET}
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+
+functions:
+  app:
+    handler: dist/tmp/index.handler
+    events:
+      - httpApi: 'POST /slack/events'
