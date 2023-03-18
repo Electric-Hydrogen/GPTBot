@@ -3,6 +3,7 @@ const AWS = require("aws-sdk");
 const {
   updateConversationHistory,
   updateConversationState,
+  updateConversationEngine,
 } = require("../common/dynamo");
 
 const lambda = new AWS.Lambda();
@@ -18,27 +19,37 @@ const app = new App({
   receiver: awsLambdaReceiver,
 });
 
-app.command("/gptbot", async ({ command, ack, respond }) => {
-  const channel = command.channel_id;
-  const subcommand = command.text;
+const validEngines = ["gpt-3.5-turbo", "gpt-4"];
 
-  if (subcommand === "start") {
+app.command("/gptbot", async ({ command, ack, respond }) => {
+  await ack();
+  const channel = command.channel_id;
+
+  const args = command.text.trim().split(/\s+/);
+  const action = args[0];
+  const engine = args[1];
+
+  if (action === "start") {
     console.log("added channel", channel);
+    const selectedEngine = validEngines.includes(engine)
+      ? engine
+      : "gpt-3.5-turbo";
     await updateConversationState(channel, true);
     await updateConversationHistory(channel, null);
-    await ack();
+    await updateConversationEngine(channel, selectedEngine);
     await respond(
-      "You have started a conversation with the ChatGPT bot in this channel."
+      `You have started a conversation with the ChatGPT bot in this channel using the engine '${selectedEngine}'.`
     );
-  } else if (subcommand === "stop") {
+  } else if (action === "stop") {
     await updateConversationState(channel, false);
     await updateConversationHistory(channel, null);
-    await ack();
     await respond(
       "You have stopped the conversation with the ChatGPT bot in this channel."
     );
   } else {
-    await ack(`Invalid subcommand. Use "/GPTBot start" or "/GPTBot stop".`);
+    await respond(
+      `Invalid subcommand. Use "/GPTBot start [engine]" or "/GPTBot stop".`
+    );
   }
 });
 

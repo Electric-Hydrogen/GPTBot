@@ -77,9 +77,48 @@ async function updateConversationState(channel, isActive) {
   }
 }
 
+async function getConversationEngine(channel) {
+  const params = {
+    TableName: dynamoTable,
+    Key: {
+      channel_id: channel,
+    },
+  };
+
+  try {
+    const result = await dynamoDB.get(params).promise();
+    return result.Item ? result.Item.engine : null;
+  } catch (error) {
+    console.error("Error retrieving conversation engine:", error);
+    return false;
+  }
+}
+
+async function updateConversationEngine(channel, engine) {
+  const params = {
+    TableName: dynamoTable,
+    Key: {
+      channel_id: channel,
+    },
+    UpdateExpression: "set engine = :engine",
+    ExpressionAttributeValues: {
+      ":engine": engine,
+    },
+    ReturnValues: "UPDATED_NEW",
+  };
+
+  try {
+    await dynamoDB.update(params).promise();
+  } catch (error) {
+    console.error("Error updating conversation state:", error);
+  }
+}
+
 module.exports = {
   getConversationHistory,
   updateConversationHistory,
   getConversationState,
   updateConversationState,
+  getConversationEngine,
+  updateConversationEngine,
 };

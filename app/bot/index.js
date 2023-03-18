@@ -4,9 +4,11 @@ const {
   getConversationHistory,
   updateConversationHistory,
   getConversationState,
+  getConversationEngine,
 } = require("../common/dynamo");
 
 const { SLACK_SIGNING_SECRET, SLACK_BOT_TOKEN, OPENAI_API_KEY } = process.env;
+const DEFAULT_ENGINE = "gpt-3.5-turbo";
 
 const app = new App({
   token: SLACK_BOT_TOKEN,
@@ -21,9 +23,12 @@ const openai = new OpenAIApi(configuration);
 async function chatGPTReply(channel, message, record = false) {
   const history = (await getConversationHistory(channel)) || [];
   const prompt = { role: "user", content: message };
-
+  const model = record
+    ? (await getConversationEngine(channel)) || DEFAULT_ENGINE
+    : DEFAULT_ENGINE;
+  console.log("Model Used: ", model);
   const completion = await openai.createChatCompletion({
-    model: "gpt-3.5-turbo",
+    model,
     messages: [
       { role: "system", content: "You are a helpful assistant." },
       ...history,
