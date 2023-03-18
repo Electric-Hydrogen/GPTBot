@@ -38,6 +38,7 @@ functions:
     handler: dist/bot.handler
     environment:
       OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+    timeout: 180
 resources:
   Resources:
     conversationsTable:
