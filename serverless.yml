@@ -31,7 +31,7 @@ provider:
 functions:
   acknowledgerFunction:
     handler: dist/acknowledger.handler
-    provisionedConcurrency: 2
+    provisionedConcurrency: 1
     events:
       - httpApi: 'POST /slack/events'
   botFunction:
