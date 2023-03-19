@@ -21,7 +21,7 @@ const app = new App({
 
 const validEngines = ["gpt-3.5-turbo", "gpt-4"];
 
-app.command("/gptbot", async ({ command, ack, respond }) => {
+app.command("/gptbot", async ({ command, ack, respond, say }) => {
   await ack();
   const channel = command.channel_id;
 
@@ -39,9 +39,11 @@ app.command("/gptbot", async ({ command, ack, respond }) => {
     await respond(
       `You have started a conversation with GPTBot in this channel using the engine '${selectedEngine}'.`
     );
+    await say("Hey there :wave: How can I help?");
   } else if (action === "stop") {
     await updateConversationState(channel, false);
     await updateConversationHistory(channel, null);
+    await say("Until next time! :call_me_hand: Take care!");
     await respond(
       "You have stopped the conversation with GPTBot in this channel."
     );

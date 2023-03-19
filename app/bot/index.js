@@ -19,6 +19,10 @@ const configuration = new Configuration({
   apiKey: OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
+const BOT_SYSTEM_PROMPT = `
+You are a helpful assistant. Your output will be displayed in Slack.
+Please make sure its format is optimized for it.
+`;
 
 async function chatGPTReply(channel, message, record = false) {
   const history = (await getConversationHistory(channel)) || [];
@@ -30,7 +34,7 @@ async function chatGPTReply(channel, message, record = false) {
   const completion = await openai.createChatCompletion({
     model,
     messages: [
-      { role: "system", content: "You are a helpful assistant." },
+      { role: "system", content: BOT_SYSTEM_PROMPT },
       ...history,
       prompt,
     ],
@@ -57,6 +61,13 @@ async function handleNewMessage({ channel, userMessage, botUserId, subtype }) {
     return;
   }
   const isActive = await getConversationState(channel);
+
+  if (userMessage.includes(`<@${botUserId}>`) && !isActive) {
+    await app.client.chat.postMessage({
+      channel,
+      text: "Hey there :wave: Let me take a look at this for you!",
+    });
+  }
 
   if (userMessage.includes(`<@${botUserId}>`) || isActive) {
     const mentionRegex = new RegExp(`<@${botUserId}>`, "g");
