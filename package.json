@@ -2,14 +2,12 @@
   "name": "gptbot",
   "version": "1.0.0",
   "description": "Chat GPT Slack Bot",
-  "main": "index.js",
   "scripts": {
     "build": "npm run clean && NODE_EN=production webpack",
     "clean": "rm -rf dist",
     "lint": "eslint -c .eslintrc.yml --ext .js app/",
     "lint:fix": "eslint --fix -c .eslintrc.yml --ext .js app/",
-    "deploy": "npm run build && serverless deploy",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "deploy": "npm run build && serverless deploy"
   },
   "keywords": [
     "Chat",
@@ -18,7 +16,7 @@
     "Bot"
   ],
   "author": "Olivier Pichon",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "cz-conventional-changelog": "3.3.0",
     "eslint": "^8.33.0",
