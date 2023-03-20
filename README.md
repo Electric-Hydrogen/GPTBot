@@ -1,4 +1,6 @@
 # GPTBot
+![GPTBot Logo](assets/logo.png)
+
 *A fully serverless (AWS Lambda, API Gateway, DynamoDB) Slack bot with GPT-4 support and full conversation mode.*
 
 ## Features & Usage
