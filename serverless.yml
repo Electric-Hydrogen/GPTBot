@@ -1,4 +1,4 @@
-service: slack-chatgpt-lambda
+service: gptbot
 
 provider:
   name: aws

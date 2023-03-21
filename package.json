@@ -7,7 +7,8 @@
     "clean": "rm -rf dist",
     "lint": "eslint -c .eslintrc.yml --ext .js app/",
     "lint:fix": "eslint --fix -c .eslintrc.yml --ext .js app/",
-    "deploy": "npm run build && serverless deploy"
+    "deploy": "npm run build && serverless deploy",
+    "deprovision": "npm run clean && serverless remove"
   },
   "keywords": [
     "ChatGPT",

@@ -67,3 +67,7 @@ bot function.
 The Bot supports full conversation mode, ie it keeps the context of what was previously exchanged to provide a new 
 answer. To do that `/gptbot start` creates a record in DynamoDB for the conversation. When `/gptbot stop` is called, 
 the conversation is deleted.
+
+## Deprovision
+Should you want to remove all the resources created on AWS and deprovision the bot, you could just type: 
+`npm run deprovision`
