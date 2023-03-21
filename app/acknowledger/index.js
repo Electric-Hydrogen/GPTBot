@@ -1,10 +1,6 @@
 const { App, AwsLambdaReceiver } = require("@slack/bolt");
 const AWS = require("aws-sdk");
-const {
-  updateConversationHistory,
-  updateConversationState,
-  updateConversationEngine,
-} = require("../common/dynamo");
+const { createConversation, deleteConversation } = require("../common/dynamo");
 
 const lambda = new AWS.Lambda();
 const { BOT_FUNCTION_NAME, SLACK_SIGNING_SECRET, SLACK_BOT_TOKEN } =
@@ -19,7 +15,7 @@ const app = new App({
   receiver: awsLambdaReceiver,
 });
 
-const validEngines = ["gpt-3.5-turbo", "gpt-4"];
+const validModels = ["gpt-3.5-turbo", "gpt-4"];
 
 app.command("/gptbot", async ({ command, ack, respond, say }) => {
   await ack();
@@ -27,22 +23,23 @@ app.command("/gptbot", async ({ command, ack, respond, say }) => {
 
   const args = command.text.trim().split(/\s+/);
   const action = args[0];
-  const engine = args[1];
+  const model = args[1];
 
   if (action === "start") {
-    const selectedEngine = validEngines.includes(engine)
-      ? engine
-      : "gpt-3.5-turbo";
-    await updateConversationState(channel, true);
-    await updateConversationHistory(channel, null);
-    await updateConversationEngine(channel, selectedEngine);
+    const selectedModel = validModels.includes(model) ? model : "gpt-3.5-turbo";
+    await createConversation({
+      channel_id: channel,
+      model: selectedModel,
+      history: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
     await respond(
-      `You have started a conversation with GPTBot in this channel using the engine '${selectedEngine}'.`
+      `You have started a conversation with GPTBot in this channel using the engine '${selectedModel}'.`
     );
     await say("Hey there :wave: How can I help?");
   } else if (action === "stop") {
-    await updateConversationState(channel, false);
-    await updateConversationHistory(channel, null);
+    await deleteConversation(channel);
     await say("Until next time! :call_me_hand: Take care!");
     await respond(
       "You have stopped the conversation with GPTBot in this channel."

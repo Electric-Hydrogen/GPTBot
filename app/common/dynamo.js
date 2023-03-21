@@ -3,19 +3,44 @@ const AWS = require("aws-sdk");
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
 const dynamoTable = process.env.DYNAMODB_TABLE;
 
-async function getConversationHistory(channel) {
+async function createConversation(conversation) {
+  const params = {
+    TableName: dynamoTable,
+    Item: conversation,
+  };
+  try {
+    await dynamoDB.put(params).promise();
+  } catch (error) {
+    console.error("Error creating conversation:", error);
+  }
+}
+
+async function deleteConversation(channel) {
   const params = {
     TableName: dynamoTable,
     Key: {
       channel_id: channel,
     },
   };
+  try {
+    await dynamoDB.delete(params).promise();
+  } catch (error) {
+    console.error("Error deleting conversation:", error);
+  }
+}
 
+async function getConversation(channel) {
+  const params = {
+    TableName: dynamoTable,
+    Key: {
+      channel_id: channel,
+    },
+  };
   try {
     const result = await dynamoDB.get(params).promise();
-    return result.Item ? result.Item.conversation_history : null;
+    return result.Item;
   } catch (error) {
-    console.error("Error retrieving conversation history:", error);
+    console.error("Error retrieving conversation:", error);
     return null;
   }
 }
@@ -26,9 +51,10 @@ async function updateConversationHistory(channel, history) {
     Key: {
       channel_id: channel,
     },
-    UpdateExpression: "set conversation_history = :history",
+    UpdateExpression: "set history = :history, updated_at = :updated_at",
     ExpressionAttributeValues: {
       ":history": history,
+      ":updated_at": new Date().toISOString(),
     },
     ReturnValues: "UPDATED_NEW",
   };
@@ -40,85 +66,9 @@ async function updateConversationHistory(channel, history) {
   }
 }
 
-async function getConversationState(channel) {
-  const params = {
-    TableName: dynamoTable,
-    Key: {
-      channel_id: channel,
-    },
-  };
-
-  try {
-    const result = await dynamoDB.get(params).promise();
-    return result.Item ? result.Item.is_active : false;
-  } catch (error) {
-    console.error("Error retrieving conversation state:", error);
-    return false;
-  }
-}
-
-async function updateConversationState(channel, isActive) {
-  const params = {
-    TableName: dynamoTable,
-    Key: {
-      channel_id: channel,
-    },
-    UpdateExpression: "set is_active = :isActive",
-    ExpressionAttributeValues: {
-      ":isActive": isActive,
-    },
-    ReturnValues: "UPDATED_NEW",
-  };
-
-  try {
-    await dynamoDB.update(params).promise();
-  } catch (error) {
-    console.error("Error updating conversation state:", error);
-  }
-}
-
-async function getConversationEngine(channel) {
-  const params = {
-    TableName: dynamoTable,
-    Key: {
-      channel_id: channel,
-    },
-  };
-
-  try {
-    const result = await dynamoDB.get(params).promise();
-    return result.Item ? result.Item.engine : null;
-  } catch (error) {
-    console.error("Error retrieving conversation engine:", error);
-    return false;
-  }
-}
-
-async function updateConversationEngine(channel, engine) {
-  const params = {
-    TableName: dynamoTable,
-    Key: {
-      channel_id: channel,
-    },
-    UpdateExpression: "set engine = :engine",
-    ExpressionAttributeValues: {
-      ":engine": engine,
-    },
-    ReturnValues: "UPDATED_NEW",
-  };
-
-  try {
-    await dynamoDB.update(params).promise();
-  } catch (error) {
-    console.error("Error updating conversation state:", error);
-  }
-}
-
 module.exports = {
-  getConversationHistory,
+  createConversation,
+  deleteConversation,
+  getConversation,
   updateConversationHistory,
-  getConversationState,
-  updateConversationState,
-  getConversationEngine,
-  updateConversationEngine,
 };
