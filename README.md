@@ -3,6 +3,9 @@
 
 *A fully serverless (AWS Lambda, API Gateway, DynamoDB) Slack bot with GPT-4 support and full conversation mode.*
 
+## Demo
+![GPTBot Logo](assets/demo.gif)
+
 ## Features & Usage
 * Support a one-off response from GPTBot when mentioning the bot (`@GPTBot`) in a channel you are both a member of.
 (Make sure the Bot is added to whichever channel in which you want to talk to the Bot).
