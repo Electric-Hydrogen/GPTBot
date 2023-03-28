@@ -54,6 +54,10 @@ async function handleNewMessage({ channel, userMessage, botUserId, subtype }) {
     return;
   }
 
+  if (!userMessage || !userMessage.length) {
+    return;
+  }
+
   const conversation = await getConversation(channel);
   const isConversationMode = !!conversation;
   const isMentioned = userMessage.includes(`<@${botUserId}>`);
