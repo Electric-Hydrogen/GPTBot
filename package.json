@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@slack/bolt": "^3.12.2",
-    "aws-sdk": "^2.1338.0",
+    "aws-sdk": "^2.1354.0",
     "openai": "^3.2.1"
   }
 }
